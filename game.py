@@ -10,6 +10,7 @@ PLAY_TOP = RADAR_H + 6
 HUMANOID_COUNT = 6
 FALL_LIMIT = 160
 PHASES = [random.uniform(0, math.tau) for _ in range(3)]
+POPUPS = []  # floating "+500" texts: {"x", "y", "text", "life"}
 
 
 def sky_color(wave):
@@ -21,8 +22,8 @@ def sky_color(wave):
 
 
 def on_humanoid_rescued(humanoid):
-    """Called when the player catches a falling humanoid; add a bonus or celebration here."""
-    pass
+    """Called when the player catches a falling humanoid; spawn a +500 popup."""
+    POPUPS.append({"x": humanoid.x, "y": humanoid.y - 20, "text": "+500", "life": 1.2})
 
 
 def bonus_life_threshold():
@@ -126,6 +127,7 @@ class Game:
         self.reset()
 
     def reset(self):
+        POPUPS.clear()
         self.player = Player()
         self.humanoids = [Humanoid(i * WORLD_W / HUMANOID_COUNT + 100) for i in range(HUMANOID_COUNT)]
         self.landers, self.bullets = [], []
@@ -174,6 +176,10 @@ class Game:
                 self.score += 500
                 on_humanoid_rescued(humanoid)
         self.update_bullets(dt)
+        for p in POPUPS:
+            p["life"] -= dt
+            p["y"] -= 40 * dt
+        POPUPS[:] = [p for p in POPUPS if p["life"] > 0]
         if player.invulnerable <= 0:
             for lander in self.landers:
                 if abs(wrap_delta(player.x, lander.x)) < 22 and abs(lander.y - player.y) < 18:
@@ -232,6 +238,11 @@ class Game:
         if player.invulnerable <= 0 or int(player.invulnerable * 10) % 2 == 0:
             f, cx = player.facing, VIEW_W / 2
             pygame.draw.polygon(screen, (240, 240, 250), [(cx + f * 18, player.y), (cx - f * 14, player.y - 8), (cx - f * 14, player.y + 8)])
+        for p in POPUPS:
+            sx = self.screen_x(p["x"])
+            if -40 < sx < VIEW_W + 40:
+                label = self.font.render(p["text"], True, (255, 255, 120))
+                screen.blit(label, label.get_rect(center=(sx, p["y"])))
         self.draw_radar(screen)
         hud = self.font.render(f"Score {self.score}  Lives {self.lives}  Wave {self.wave}  Humanoids {len(self.humanoids)}", True, (240, 240, 240))
         screen.blit(hud, (10, RADAR_H + 4))
