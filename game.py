@@ -1,6 +1,7 @@
 import math
 import random
 import pygame
+import colorsys
 
 VIEW_W, VIEW_H = 800, 560
 WORLD_W = 3200
@@ -13,7 +14,10 @@ PHASES = [random.uniform(0, math.tau) for _ in range(3)]
 
 def sky_color(wave):
     """Return an (r, g, b) sky colour for the current wave, or None for the default."""
-    pass
+    hue = (0.65 + 0.08 * (wave - 1)) % 1.0
+    value = min(0.45, 0.12 + 0.04 * (wave - 1))
+    r, g, b = colorsys.hsv_to_rgb(hue, 0.8, value)
+    return int(r * 255), int(g * 255), int(b * 255)
 
 
 def on_humanoid_rescued(humanoid):
